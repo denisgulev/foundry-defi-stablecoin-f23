@@ -1,66 +1,33 @@
-## Foundry
+#### STABLECOIN
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+1. (relative stability) anchored or pegged -> $1
+    1. chainlink price feed
+    2. set a fnc to exchange ETH/BTC for $$$
+2. stability mechanism (MINTING): Algorithmic (decentralized)
+    1. people can only mint with collateral
+3. collateralType: Exogenous (crypto)
+    1. wETH
+    2. wBTC
 
-Foundry consists of:
+####
+Define following function in the engine:
+1. depositCollateral
+2. mintDsc
+    - keep track of how much a specific user has minted
+    - check if amountToBeMinted respects the HealthFactor (see. AAVE docs for more info)
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- write deploy script with a HelperConfig file to retrieve input parameters for DSCEngine and DecentralizedStableCoin
 
-## Documentation
+- write some test for the deploy script
 
-https://book.getfoundry.sh/
+- Implement redeem function (be sure to check healthFactor after the transfer)
+    - if a user have some DSC minted and want to redeem ALL his collateral, it will fail, as there are some DSC to his name;
+    to avoid this failure, we should BURN first it's tokens and redeem all collateral afterwards
 
-## Usage
+- Implement liquidate function (we want to remove positions of user in the system, if it's collateral price tanks)
+    - If userA's position goes below healthFactor, another user can BUY it's position, by paying for userA's token-collateralized at a advatagious price 
+        and liquidate (BURN) userA's DSCs
 
-### Build
+#### ATTACKS
 
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+1. Reentrancy - one of the most common attacks
