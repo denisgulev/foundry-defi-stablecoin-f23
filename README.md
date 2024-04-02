@@ -31,3 +31,16 @@ Define following function in the engine:
 #### ATTACKS
 
 1. Reentrancy - one of the most common attacks
+
+
+#### TESTING LAYERS
+
+1. Unit Tests (bare-minimum)
+2. Fuzz Tests 
+3. Static Analysis
+4. Formal Verification -> uses mathematical proofs to try and break the code
+    This has different techniques to be evalued:
+    - Symbolic Execution -> explore different parts of a program and create a mathematical representation for each of them;
+                            prove or disprove properties of a function using mathematical mode
+
+                            
