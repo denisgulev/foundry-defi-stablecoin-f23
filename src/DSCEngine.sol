@@ -48,7 +48,7 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__TokenAddressesAndPriceFeedAddressesMustHaveSameLength();
     error DSCEngine__TokenNotAllowed();
     error DSCEngine__TransferFailed();
-    error DSCEngine__BreaksHeathFactor(uint256 healthFactor);
+    error DSCEngine__BreaksHealthFactor(uint256 healthFactor);
     error DSCEngine__MintFailed();
     error DSCEngine__HealthFactorOK();
     error DSCEngine__HealthFactorNotImproved();
@@ -239,21 +239,6 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    // we can set a treshold, so the user can verify its position and make decisions about it
-    /*
-     * ex.
-     * define a threshold of 150%
-     * at first personA deposits a collateral of $100-ETH
-     * mint DSC for $50
-     * - if ETH decreases in value to $74, personA finds himself undercollateralized
-     * Different options opens at this point:
-     * 1) another person can buy the position of personA, by paying $50 worth of DSC and
-     *      receiving $74 worth of ETH.
-     *      In this way personA gets out of debt and remains with 0 collateral and 0 DSC,
-     *      while the person who buys the position, receives ETH at a discount
-     */
-    function getHealthFactor() external view {}
-
     ///////////////////////////////////////////
     /// Private and Internal View Functions ///
     ///////////////////////////////////////////
@@ -301,8 +286,9 @@ contract DSCEngine is ReentrancyGuard {
         // total DSCMinted
         // total collateral value
         (uint256 totalDscMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
-        // return (collateralValueInUsd / totalDscMinted);
+        if (totalDscMinted == 0) return type(uint256).max;
         uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+
         /*
          * collateral $150 ETH
          * want to mint $100 dsc
@@ -318,8 +304,9 @@ contract DSCEngine is ReentrancyGuard {
         // 1. do they have enough collateral?
         // 2. revert if necessary
         uint256 userHealthFactor = _healthFactor(user);
+        console.log("userHealthFactor: ", userHealthFactor);
         if (userHealthFactor < MIN_HEALTH_FACTOR) {
-            revert DSCEngine__BreaksHeathFactor(userHealthFactor);
+            revert DSCEngine__BreaksHealthFactor(userHealthFactor);
         }
     }
 
@@ -341,6 +328,7 @@ contract DSCEngine is ReentrancyGuard {
         for (uint256 i = 0; i < s_collateralTokens.length; i++) {
             address token = s_collateralTokens[i];
             uint256 amount = s_collateralDeposited[user][token];
+            console.log("collateralDeposited: ", amount);
             totalCollateralValueInUsd += getUsdValue(token, amount);
         }
         return totalCollateralValueInUsd;
@@ -357,5 +345,30 @@ contract DSCEngine is ReentrancyGuard {
         for (uint256 i = 0; i < s_collateralTokens.length; i++) {
             totalCollateral += tokenToCollateral[s_collateralTokens[i]];
         }
+    }
+
+    function getAccountInformation(address user)
+        external
+        view
+        returns (uint256 totalDscMinted, uint256 collateralValueInUsd)
+    {
+        (totalDscMinted, collateralValueInUsd) = _getAccountInformation(user);
+    }
+
+    // we can set a treshold, so the user can verify its position and make decisions about it
+    /*
+     * ex.
+     * define a threshold of 150%
+     * at first personA deposits a collateral of $100-ETH
+     * mint DSC for $50
+     * - if ETH decreases in value to $74, personA finds himself undercollateralized
+     * Different options opens at this point:
+     * 1) another person can buy the position of personA, by paying $50 worth of DSC and
+     *      receiving $74 worth of ETH.
+     *      In this way personA gets out of debt and remains with 0 collateral and 0 DSC,
+     *      while the person who buys the position, receives ETH at a discount
+     */
+    function getHealthFactor(address user) external view returns (uint256) {
+        return _healthFactor(user);
     }
 }
