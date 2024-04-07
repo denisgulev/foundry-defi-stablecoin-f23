@@ -14,7 +14,6 @@
 
 pragma solidity ^0.8.20;
 
-import {console} from "forge-std/Script.sol";
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -283,20 +282,32 @@ contract DSCEngine is ReentrancyGuard {
      * Not quite, we must specify a threshold, as a limit to be respected.
      */
     function _healthFactor(address user) private view returns (uint256) {
-        // total DSCMinted
-        // total collateral value
         (uint256 totalDscMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
+        return _calculateHealthFactor(totalDscMinted, collateralValueInUsd);
+    }
+
+    function _calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd)
+        internal
+        pure
+        returns (uint256)
+    {
+        // // total DSCMinted
+        // // total collateral value
+        // (uint256 totalDscMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
+        // if (totalDscMinted == 0) return type(uint256).max;
+        // uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+
+        // /*
+        //  * collateral $150 ETH
+        //  * want to mint $100 dsc
+        //  * threshold = 50
+        //  * collateralAdjustedForThreshold -> 150 * 50 = 7500 / 100 = 75;
+        //  * we divide collateralAdjustedForThreshold / dscMinted : 75 / 100
+        //  * if the result if < 1, the user get liquidated
+        //  */
+        // return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
         if (totalDscMinted == 0) return type(uint256).max;
         uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
-
-        /*
-         * collateral $150 ETH
-         * want to mint $100 dsc
-         * threshold = 50
-         * collateralAdjustedForThreshold -> 150 * 50 = 7500 / 100 = 75; 
-         * we divide collateralAdjustedForThreshold / dscMinted : 75 / 100
-         * if the result if < 1, the user get liquidated
-         */
         return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
 
@@ -304,7 +315,6 @@ contract DSCEngine is ReentrancyGuard {
         // 1. do they have enough collateral?
         // 2. revert if necessary
         uint256 userHealthFactor = _healthFactor(user);
-        console.log("userHealthFactor: ", userHealthFactor);
         if (userHealthFactor < MIN_HEALTH_FACTOR) {
             revert DSCEngine__BreaksHealthFactor(userHealthFactor);
         }
@@ -313,6 +323,14 @@ contract DSCEngine is ReentrancyGuard {
     //////////////////////////////////////////
     /// Public and External View Functions ///
     //////////////////////////////////////////
+    function calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd)
+        external
+        pure
+        returns (uint256)
+    {
+        return _calculateHealthFactor(totalDscMinted, collateralValueInUsd);
+    }
+
     function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns (uint256) {
         // get token price
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
@@ -328,7 +346,6 @@ contract DSCEngine is ReentrancyGuard {
         for (uint256 i = 0; i < s_collateralTokens.length; i++) {
             address token = s_collateralTokens[i];
             uint256 amount = s_collateralDeposited[user][token];
-            console.log("collateralDeposited: ", amount);
             totalCollateralValueInUsd += getUsdValue(token, amount);
         }
         return totalCollateralValueInUsd;
@@ -370,5 +387,50 @@ contract DSCEngine is ReentrancyGuard {
      */
     function getHealthFactor(address user) external view returns (uint256) {
         return _healthFactor(user);
+    }
+
+    function getPrecision() external pure returns (uint256) {
+        return PRECISION;
+    }
+
+    function getAdditionalFeedPrecision() external pure returns (uint256) {
+        return ADDITIONAL_FEED_PRECISION;
+    }
+
+    function getCollateralTokenPriceFeed(address token) external view returns (address) {
+        return s_priceFeeds[token];
+    }
+
+    function getCollateralTokens() external view returns (address[] memory) {
+        return s_collateralTokens;
+    }
+
+    function getMinHealthFactor() external pure returns (uint256) {
+        return MIN_HEALTH_FACTOR;
+    }
+
+    function getLiquidationThreshold() external pure returns (uint256) {
+        return LIQUIDATION_THRESHOLD;
+    }
+
+    function getCollateralBalanceOfUser(address user, address token) external view returns (uint256) {
+        return s_collateralDeposited[user][token];
+    }
+
+    function getAccountCollateralValue(address user) public view returns (uint256 totalCollateralValueInUsd) {
+        for (uint256 index = 0; index < s_collateralTokens.length; index++) {
+            address token = s_collateralTokens[index];
+            uint256 amount = s_collateralDeposited[user][token];
+            totalCollateralValueInUsd += getUsdValue(token, amount);
+        }
+        return totalCollateralValueInUsd;
+    }
+
+    function getDsc() external view returns (address) {
+        return address(i_dsc);
+    }
+
+    function getLiquidationPrecision() external pure returns (uint256) {
+        return LIQUIDATION_PRECISION;
     }
 }
