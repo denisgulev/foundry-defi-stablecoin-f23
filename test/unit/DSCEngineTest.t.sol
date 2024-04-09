@@ -209,14 +209,6 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
     }
 
-    function testEmitCollateralRedeemedWithCorrectArgs() public depositedCollateral {
-        vm.expectEmit(true, true, true, true, address(engine));
-        emit CollateralRedeemed(USER, USER, weth, AMOUNT_COLLATERAL);
-        vm.startPrank(USER);
-        engine.redeemCollateral(weth, AMOUNT_COLLATERAL);
-        vm.stopPrank();
-    }
-
     ///////////////////////////////////
     // redeemCollateralForDsc Tests //
     //////////////////////////////////

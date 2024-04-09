@@ -291,12 +291,6 @@ contract DSCEngine is ReentrancyGuard {
         pure
         returns (uint256)
     {
-        // // total DSCMinted
-        // // total collateral value
-        // (uint256 totalDscMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
-        // if (totalDscMinted == 0) return type(uint256).max;
-        // uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
-
         // /*
         //  * collateral $150 ETH
         //  * want to mint $100 dsc
