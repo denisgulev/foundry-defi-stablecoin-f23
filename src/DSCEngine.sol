@@ -18,6 +18,7 @@ import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.4/interfaces/AggregatorV3Interface.sol";
+import {OracleLib} from "./libraries/OracleLib.sol";
 
 /*
  * @title DSCEngine
@@ -43,6 +44,7 @@ contract DSCEngine is ReentrancyGuard {
     //////////////
     /// Errors ///
     //////////////
+
     error DSCEngine__NeedsMoreThanZero();
     error DSCEngine__TokenAddressesAndPriceFeedAddressesMustHaveSameLength();
     error DSCEngine__TokenNotAllowed();
@@ -51,6 +53,11 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__MintFailed();
     error DSCEngine__HealthFactorOK();
     error DSCEngine__HealthFactorNotImproved();
+
+    /////////////
+    /// Types ///
+    /////////////
+    using OracleLib for AggregatorV3Interface;
 
     ///////////////////////
     /// State Variables ///
@@ -328,7 +335,7 @@ contract DSCEngine is ReentrancyGuard {
     function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns (uint256) {
         // get token price
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
         // price has a precision of 'e8'
         // we want to return a value with precision of 'e18'
         return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
