@@ -46,3 +46,44 @@ Define following function in the engine:
 
 #### FUZZ TESTING
 
+Fuzz testing is a way to test a code, by supplying random inputs in an attempt to break it.
+
+- in Foundry, a basic example of fuzz testing is to set an input parameter to the testing function, which will be used to call the ontract's function we want to test.
+
+There are two main ways to use fuzz testing:
+1. Stateless Fuzz Testing
+    which means that when running multiple iterations of a fuzz tests, the state of the a previous run will be discarded
+
+2. Stateful Fuzz Testing
+    this means that the state of an iteration of the fuzz test will be the initial state of the next run
+    ** to take advatage of this kind of tests, we must use the "invariant" keyword
+
+What are the invariants/properties? (Property of the system the must remain the same.)
+
+
+--> OpenInvariantsTest:
+    such invariant tests are great for a quick run on simple contracts that contain functions which do not have pre-requisite.
+    (example:
+        in the DSCEngine contract, to call the 'redeemCollateral' function, a user must have first deposited collateral with accepted collateralToken address
+    )
+
+--> InvariantsTest:
+    create a handler with a logical-sequentiality for the functions to be called
+    (i.e. don't call 'redeemCollater' if the is no collateral to be redeemed)
+
+    the handler is defined in "Handler.t.sol":
+        in here we will make sure that certain functions can be called during the tests only if 
+        there are some pre-requisites
+
+    -> to track if a function is being called, we can use ghost variables
+
+
+### Oracle Usage
+
+We should add some checks for the oracle functions we are using, in order to assure that if some of these breaks, our contract does not breaks.
+
+- for PriceFeed utility, we want to make sure that the prices do not remain stale
+    each pricefeed has a heartbeat of X seconds, we wanna make sure to receive a new price every X seconds
+
+    For this we can define a library and link it to the priceFeed type, so we can make use of the checks defined in the library.
+
